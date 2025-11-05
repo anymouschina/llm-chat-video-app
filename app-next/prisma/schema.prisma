@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  type      TaskType
+  prompt    String?
+  params    Json?
+  imageUrl  String?
+  status    Status   @default(PENDING)
+  videoUrl  String?
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Status {
+  PENDING
+  RUNNING
+  FINISHED
+  FAILED
+}
+
+enum TaskType {
+  IMAGE_TO_VIDEO
+  TEXT_TO_VIDEO
+}
+

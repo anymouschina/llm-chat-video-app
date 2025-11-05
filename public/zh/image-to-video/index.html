@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>图片转视频 | AI Video Demo</title>
+    <meta name="description" content="将图片转为短视频的前端演示页面（无后端）。支持拖拽上传、参数配置、预览与导出设置。" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">AI Video</a>
+      <nav class="nav">
+        <a href="/zh/image-to-video/" class="active">图片转视频</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <h1>图片转视频</h1>
+        <p class="sub">前端演示界面（暂未接入后端）。上传图片、配置参数并预览效果。</p>
+      </section>
+
+      <section class="canvas">
+        <div class="uploader" id="dropzone">
+          <input id="file-input" type="file" accept="image/*" hidden />
+          <div class="uploader-inner">
+            <div class="icon" aria-hidden>🖼️</div>
+            <p class="title">拖拽图片到此处，或 <button id="pick" class="link">选择文件</button></p>
+            <p class="hint">支持 PNG / JPG / JPEG（最大 10MB）</p>
+          </div>
+        </div>
+        <div class="preview" id="preview">
+          <div class="preview-stage">
+            <img id="preview-img" alt="预览" />
+            <div class="preview-overlay" id="preview-overlay">将在此预览生成的视频效果</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-group">
+          <div class="panel-item">
+            <label class="label">提示词（可选）</label>
+            <textarea id="prompt" class="input" rows="3" placeholder="描述视频期望的运动/风格/镜头语言"></textarea>
+          </div>
+          <div class="panel-item grid-2">
+            <div>
+              <label class="label">时长</label>
+              <select id="duration" class="input">
+                <option value="2">2s</option>
+                <option value="4" selected>4s</option>
+                <option value="6">6s</option>
+                <option value="8">8s</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">分辨率</label>
+              <select id="resolution" class="input">
+                <option value="720p">1280×720（720p）</option>
+                <option value="1080p" selected>1920×1080（1080p）</option>
+                <option value="square">1024×1024（方形）</option>
+              </select>
+            </div>
+          </div>
+          <div class="panel-item grid-2">
+            <div>
+              <label class="label">帧率</label>
+              <select id="fps" class="input">
+                <option value="24">24</option>
+                <option value="25">25</option>
+                <option value="30" selected>30</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">纵横比</label>
+              <select id="aspect" class="input">
+                <option value="9:16">9:16（竖屏）</option>
+                <option value="1:1">1:1（方形）</option>
+                <option value="16:9" selected>16:9（横屏）</option>
+              </select>
+            </div>
+          </div>
+          <div class="panel-item grid-2">
+            <div>
+              <label class="label">模型</label>
+              <select id="model" class="input">
+                <option value="default" selected>默认模型（占位）</option>
+                <option value="pro">Pro（占位）</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">随机种子</label>
+              <div class="inline">
+                <input id="seed" class="input" type="number" placeholder="留空为随机" />
+                <button id="random-seed" class="btn ghost" type="button">随机</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-actions">
+            <button id="generate" class="btn primary" disabled title="尚未接入后端">生成视频（演示）</button>
+            <button id="export-config" class="btn">导出设置 JSON</button>
+            <span id="note" class="note">注：按钮已禁用，仅演示交互与预览。</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="how">
+        <h2>使用说明</h2>
+        <ol>
+          <li>上传一张清晰的参考图片（人物或场景）。</li>
+          <li>编写可选提示词，描述运动、镜头、风格。</li>
+          <li>配置时长、分辨率、帧率与纵横比。</li>
+          <li>点击“生成视频”后端即可渲染（本页未接入）。</li>
+        </ol>
+      </section>
+
+      <section class="faq">
+        <h2>常见问题</h2>
+        <details>
+          <summary>为什么按钮是灰色不可用？</summary>
+          <p>当前为前端演示，不包含推理后端。一旦接入 API 可启用。</p>
+        </details>
+        <details>
+          <summary>支持哪些图片格式？</summary>
+          <p>PNG / JPG / JPEG（建议不超过 10MB）。</p>
+        </details>
+      </section>
+    </main>
+
+    <footer class="site-footer">© 2025 AI Video Demo</footer>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+  </html>
+
