@@ -16,7 +16,7 @@ export async function triggerTextToVideo(input: {
   const orientation = aspect === "9:16" ? "portrait" : aspect === "1:1" ? "square" : "landscape";
 
   const size = String(input.params?.size ?? "small");
-  const remix_target_id = process.env.N8N_REMIX_TARGET_ID || "gen_01k8zgzxbpeq9vatmy831m3k22";
+  const remix_target_id = process.env.N8N_REMIX_TARGET_ID || null;
   const model = process.env.N8N_MODEL || "turbo";
 
   const payload = {

@@ -17,5 +17,8 @@
   "ai": {
     "binding": "AI"
   },
+  "vars": {
+    "N8N_T2V_WEBHOOK_URL": "https://n8n-preview.beqlee.icu/webhook/cfb4829e-3eea-4062-9904-b408e153fb14"
+  },
   "upload_source_maps": true
 }

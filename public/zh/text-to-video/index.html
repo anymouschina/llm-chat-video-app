@@ -3,17 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>首页 | AI Video Demo</title>
-    <meta name="description" content="个人自用 Sora/MindVideo 类站点首页：三栏布局，快速发起文本转视频，查看状态与最近生成。" />
-    <link rel="stylesheet" href="/home.css" />
+    <title>文本转视频 | AI Video Demo</title>
+    <meta name="description" content="文本转视频前端演示：提示词输入、参数设置、任务状态与最近生成展示（无后端）。" />
+    <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <header class="topbar">
       <div class="topbar-inner">
         <a class="brand" href="/">AI Video</a>
         <nav class="topnav">
-          <a class="active" href="/">首页</a>
-          <a href="/zh/text-to-video/">文本转视频</a>
+          <a class="active" href="/zh/text-to-video/">文本转视频</a>
           <a href="/zh/image-to-video/">图片转视频</a>
         </nav>
       </div>
@@ -22,8 +21,7 @@
     <main class="layout">
       <aside class="sidebar">
         <div class="menu">
-          <a class="menu-item active" href="/">首页</a>
-          <a class="menu-item" href="/zh/text-to-video/">文本转视频</a>
+          <a class="menu-item active" href="/zh/text-to-video/">文本转视频</a>
           <a class="menu-item" href="/zh/image-to-video/">图片转视频</a>
           <a class="menu-item" href="#" data-disabled>历史记录</a>
           <a class="menu-item" href="#" data-disabled>设置</a>
@@ -33,11 +31,11 @@
       <section class="work">
         <div class="panel">
           <div class="panel-header">
-            <h1>快速创建 · 文本转视频</h1>
+            <h1>文本转视频</h1>
           </div>
           <div class="form-group">
-            <label class="label">提示词</label>
-            <textarea id="prompt" class="input" rows="6" placeholder="描述场景、风格、人物与镜头……"></textarea>
+            <label class="label">提示词输入框</label>
+            <textarea id="prompt" class="input" rows="8" placeholder="在这里输入场景描述、风格、人物、镜头语言……"></textarea>
           </div>
           <div class="toolbar">
             <button class="btn" id="btn-extend">AI 提示词扩展</button>
@@ -83,7 +81,6 @@
           </div>
           <div class="center">
             <button id="generate" class="btn primary">生成视频</button>
-            <a class="btn" href="/zh/text-to-video/">进入完整页面</a>
           </div>
         </div>
       </section>
@@ -102,7 +99,7 @@
 
     <footer class="footer">© 2025 AI Video Demo</footer>
 
-    <script src="/home.js" type="module"></script>
+    <script src="./app.js" type="module"></script>
   </body>
   </html>
 
