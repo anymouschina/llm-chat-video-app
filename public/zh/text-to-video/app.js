@@ -2,16 +2,17 @@ const el = (sel, p = document) => p.querySelector(sel);
 const els = (sel, p = document) => Array.from(p.querySelectorAll(sel));
 
 const state = {
-  tasks: [], // { id, status, progress, prompt, model, duration }
+  tasks: [], // { id, status, progress, prompt, model, duration, remoteId, videoUrl }
   nextId: 124,
 };
 
-function addTask({ prompt, duration, model }) {
+function addTask({ prompt, duration, model, remoteId }) {
   const id = state.nextId++;
-  const task = { id, status: "running", progress: 0, prompt, model, duration };
+  const task = { id, status: "running", progress: 0, prompt, model, duration, remoteId, videoUrl: null };
   state.tasks.unshift(task);
   renderTasks();
-  simulateProgress(task);
+  if (!remoteId) simulateProgress(task);
+  return task;
 }
 
 function simulateProgress(task) {
@@ -28,25 +29,7 @@ function simulateProgress(task) {
   }, 200);
 }
 
-function addRecent(task) {
-  const recent = el("#recent-list");
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `
-    <div class="thumb">预览（示例）</div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <strong>视频 ${task.duration}s</strong>
-      <span style="color:#6b7280;margin-left:auto">模型: ${task.model}</span>
-    </div>
-    <div style="color:#6b7280;margin-top:4px;">提示词: ${escapeHtml(task.prompt || "(空)")}</div>
-    <div class="task-actions">
-      <button class="btn" onclick="alert('演示：播放')">播放</button>
-      <button class="btn" onclick="alert('演示：下载')">下载</button>
-      <button class="btn" onclick="recreate(${task.id})">再生成</button>
-    </div>
-  `;
-  recent.prepend(card);
-}
+async function addRecent() { await loadRecent(); }
 
 function recreate(id) {
   const task = state.tasks.find(t => t.id === id);
@@ -104,7 +87,7 @@ el("#generate").addEventListener("click", async () => {
     metadata: null,
     cameo_ids: null,
     cameo_replacements: null,
-    model: "sy_8",
+    model: "turbo",
     style_id: null,
     audio_caption: null,
     audio_transcript: null,
@@ -113,23 +96,28 @@ el("#generate").addEventListener("click", async () => {
   };
   // Fire real request to Worker API -> n8n; continue with optimistic UI
   try {
-    const res = await fetch("/api/t2v", {
+    const res = await fetch("https://n8n-preview.beqlee.icu/webhook/cfb4829e-3eea-4062-9904-b408e153fb14", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
     if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const remoteId = data?.data?.id || null;
       toast("已提交到后端 (n8n)");
+      const task = addTask({ prompt, duration, model, remoteId });
+      if (remoteId) pollRemote(task);
     } else {
       const t = await res.json().catch(() => ({}));
       console.warn("backend rejected", t);
       toast("后端未受理，仍进行前端演示");
+      addTask({ prompt, duration, model });
     }
   } catch (e) {
     console.warn("request failed", e);
     toast("请求失败，进行前端演示");
+    addTask({ prompt, duration, model });
   }
-  addTask({ prompt, duration, model });
 });
 
 el("#btn-extend").addEventListener("click", () => {
@@ -152,3 +140,124 @@ addTask({ prompt: "街头灯光反射，推镜进入人物眼神", duration: 15,
 
 // Expose for inline handlers
 window.recreate = recreate;
+
+// Simple toast helper
+function toast(msg) {
+  const el = document.createElement("div");
+  el.textContent = msg;
+  el.style.cssText =
+    "position:fixed;left:50%;top:10px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:8px;opacity:0.95;z-index:9999;font-size:13px";
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+
+async function pollRemote(task) {
+  const statusUrl = "https://n8n-preview.beqlee.icu/webhook/f44e67ae-059c-4150-a01a-c1988413ef38";
+  while (task.status === "running") {
+    try {
+      const url = `${statusUrl}?taskId=${encodeURIComponent(task.remoteId)}`;
+      const res = await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
+      const j = await res.json().catch(() => ({}));
+      const d = j?.data || j || {};
+
+      // Progress: accept 0-100 or 0-1, strings or numbers
+      let percent = firstNumber(d.progress, d.percent, d.percentage);
+      if (typeof percent === "string") percent = Number(percent);
+      if (typeof percent === "number" && !Number.isNaN(percent)) {
+        if (percent > 0 && percent <= 1) percent = percent * 100;
+        task.progress = clamp(percent, 0, 100);
+      }
+
+      // Status and media URL resolution
+      const status = String(d.status || d.state || "running").toLowerCase();
+      let vurl = d.videoUrl || d.video_url || null;
+      if (!vurl && d.extra) {
+        try {
+          const ex = typeof d.extra === "string" ? JSON.parse(d.extra) : d.extra;
+          vurl = ex?.downloadable_url || ex?.url || ex?.encodings?.source?.path || ex?.encodings?.source_wm?.path || null;
+        } catch {}
+      }
+
+      if (["finished","success","done","completed"].includes(status) || vurl) {
+        task.status = "finished";
+        task.progress = 100;
+        task.videoUrl = vurl;
+        renderTasks();
+        loadRecent();
+        break;
+      }
+      if (["failed","error"].includes(status)) {
+        task.status = "failed";
+        renderTasks();
+        break;
+      }
+      renderTasks();
+    } catch {}
+    await sleep(2000);
+  }
+}
+
+function firstNumber(...vals) {
+  for (const v of vals) {
+    const n = Number(v);
+    if (!Number.isNaN(n) && Number.isFinite(n)) return n;
+  }
+  return undefined;
+}
+
+function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// --- Recent list from remote API ---
+async function loadRecent() {
+  const recent = document.getElementById("recent-list");
+  try {
+    const res = await fetch("https://n8n-preview.beqlee.icu/webhook/videoList", { headers: { Accept: "application/json" } });
+    const json = await res.json();
+    const items = normalizeRecent(json).slice(0, 6);
+    renderRecent(items, recent);
+  } catch (e) {
+    recent.innerHTML = `<div style="color:#6b7280">无法加载最近生成</div>`;
+  }
+}
+
+function normalizeRecent(json) {
+  const arr = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+  const items = arr.map(mapRecentItem).filter(Boolean);
+  items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  return items;
+}
+
+function mapRecentItem(r) {
+  try {
+    let vurl = r.videoUrl || r.video_url || r.url || r.downloadable_url || null;
+    if (!vurl && r.extra) {
+      const ex = typeof r.extra === "string" ? JSON.parse(r.extra) : r.extra;
+      vurl = ex?.downloadable_url || ex?.url || ex?.encodings?.source?.path || ex?.encodings?.source_wm?.path || null;
+    }
+    return { title: r.title || r.prompt || r.chat || "(无题)", createdAt: r.createdAt || r.created_at || "", model: r.model || "", videoUrl: vurl };
+  } catch { return null; }
+}
+
+function renderRecent(items, container) {
+  container.innerHTML = "";
+  if (!items.length) { container.innerHTML = `<div style="color:#6b7280">暂无记录</div>`; return; }
+  for (const it of items) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const media = it.videoUrl ? `<video class=\"thumb\" src=\"${it.videoUrl}\" controls preload=\"metadata\"></video>` : `<div class=\"thumb\">无视频</div>`;
+    card.innerHTML = `
+      ${media}
+      <div style=\"display:flex;gap:8px;align-items:center\">
+        <strong>${escapeHtml(it.title)}</strong>
+        <span style=\"color:#6b7280;margin-left:auto\">${escapeHtml(it.model || "")}</span>
+      </div>
+      <div style=\"color:#6b7280;margin-top:4px;\">${escapeHtml(it.createdAt || "")}</div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+// Initial recent load + periodic refresh
+loadRecent();
+setInterval(loadRecent, 10000);

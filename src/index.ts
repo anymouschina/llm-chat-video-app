@@ -37,6 +37,11 @@ export default {
 
     // Handle static assets (frontend)
     if (!url.pathname.startsWith("/api/")) {
+      // Default to text-to-video as the homepage
+      if (url.pathname === "/") {
+        const target = new URL("/zh/text-to-video/", url.origin);
+        return Response.redirect(target.toString(), 302);
+      }
       return env.ASSETS.fetch(request);
     }
 

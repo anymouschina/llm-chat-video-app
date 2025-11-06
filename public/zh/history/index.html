@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>历史记录 | AI Video Demo</title>
+    <link rel="stylesheet" href="/home.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">AI Video</a>
+        <nav class="topnav">
+          <a href="/">首页</a>
+          <a href="/zh/text-to-video/">文本转视频</a>
+          <a href="/zh/image-to-video/">图片转视频</a>
+          <a class="active" href="/zh/history/">历史记录</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar">
+        <div class="menu">
+          <a class="menu-item" href="/">首页</a>
+          <a class="menu-item" href="/zh/text-to-video/">文本转视频</a>
+          <a class="menu-item" href="/zh/image-to-video/">图片转视频</a>
+          <a class="menu-item active" href="/zh/history/">历史记录</a>
+        </div>
+      </aside>
+
+      <section class="work">
+        <div class="panel">
+          <h1>生成记录</h1>
+          <div class="grid4">
+            <div style="grid-column: span 3;">
+              <label class="label">按标题过滤（可选）</label>
+              <input id="title" class="input" placeholder="输入标题关键字" />
+            </div>
+            <div style="display:flex;align-items:end;gap:8px;">
+              <button class="btn" id="search">查询</button>
+              <button class="btn" id="refresh">刷新</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div id="record-list" class="recent"></div>
+        </div>
+      </section>
+
+      <aside class="results">
+        <div class="panel">
+          <h2>帮助</h2>
+          <p style="color:#6b7280">从远端接口获取生成视频列表；支持按标题过滤。</p>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="footer">© 2025 AI Video Demo</footer>
+
+    <script src="./list.js" type="module"></script>
+  </body>
+  </html>

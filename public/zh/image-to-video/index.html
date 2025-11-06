@@ -7,23 +7,41 @@
     <meta name="description" content="将图片转为短视频的前端演示页面（无后端）。支持拖拽上传、参数配置、预览与导出设置。" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Load page styles first, then global home.css to unify topbar look -->
     <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="/home.css" />
   </head>
   <body>
-    <header class="site-header">
-      <a class="brand" href="/">AI Video</a>
-      <nav class="nav">
-        <a href="/zh/image-to-video/" class="active">图片转视频</a>
-      </nav>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">AI Video</a>
+        <nav class="topnav">
+          <a href="/">首页</a>
+          <a href="/zh/text-to-video/">文本转视频</a>
+          <a class="active" href="/zh/image-to-video/">图片转视频</a>
+          <a href="/zh/history/">历史记录</a>
+        </nav>
+      </div>
     </header>
 
-    <main class="container">
-      <section class="hero">
-        <h1>图片转视频</h1>
-        <p class="sub">前端演示界面（暂未接入后端）。上传图片、配置参数并预览效果。</p>
-      </section>
+    <main class="layout">
+      <aside class="sidebar">
+        <div class="menu">
+          <a class="menu-item" href="/">首页</a>
+          <a class="menu-item" href="/zh/text-to-video/">文本转视频</a>
+          <a class="menu-item active" href="/zh/image-to-video/">图片转视频</a>
+          <a class="menu-item" href="/zh/history/">历史记录</a>
+        </div>
+      </aside>
 
-      <section class="canvas">
+      <section class="work">
+        <div class="panel">
+          <h1>图片转视频</h1>
+          <p class="sub">前端演示界面（暂未接入后端）。上传图片、配置参数并预览效果。</p>
+        </div>
+
+        <div class="panel">
+          <div class="canvas" style="margin-top:0;">
         <div class="uploader" id="dropzone">
           <input id="file-input" type="file" accept="image/*" hidden />
           <div class="uploader-inner">
@@ -38,9 +56,10 @@
             <div class="preview-overlay" id="preview-overlay">将在此预览生成的视频效果</div>
           </div>
         </div>
-      </section>
+          </div>
+        </div>
 
-      <section class="panel">
+        <section class="panel">
         <div class="panel-group">
           <div class="panel-item">
             <label class="label">提示词（可选）</label>
@@ -106,9 +125,9 @@
             <span id="note" class="note">注：按钮已禁用，仅演示交互与预览。</span>
           </div>
         </div>
-      </section>
+        </section>
 
-      <section class="how">
+        <section class="how panel">
         <h2>使用说明</h2>
         <ol>
           <li>上传一张清晰的参考图片（人物或场景）。</li>
@@ -116,9 +135,9 @@
           <li>配置时长、分辨率、帧率与纵横比。</li>
           <li>点击“生成视频”后端即可渲染（本页未接入）。</li>
         </ol>
-      </section>
+        </section>
 
-      <section class="faq">
+        <section class="faq panel">
         <h2>常见问题</h2>
         <details>
           <summary>为什么按钮是灰色不可用？</summary>
@@ -128,12 +147,19 @@
           <summary>支持哪些图片格式？</summary>
           <p>PNG / JPG / JPEG（建议不超过 10MB）。</p>
         </details>
+        </section>
       </section>
+
+      <aside class="results">
+        <div class="panel">
+          <h2>最近生成</h2>
+          <div id="recent-list" class="recent"></div>
+        </div>
+      </aside>
     </main>
 
-    <footer class="site-footer">© 2025 AI Video Demo</footer>
+    <footer class="footer">© 2025 AI Video Demo</footer>
 
     <script src="./app.js" type="module"></script>
   </body>
   </html>
-
