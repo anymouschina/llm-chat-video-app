@@ -87,7 +87,7 @@ el("#generate").addEventListener("click", async () => {
     metadata: null,
     cameo_ids: null,
     cameo_replacements: null,
-    model: "turbo",
+    model: "sy_8",
     style_id: null,
     audio_caption: null,
     audio_transcript: null,
@@ -105,18 +105,20 @@ el("#generate").addEventListener("click", async () => {
       const data = await res.json().catch(() => ({}));
       const remoteId = data?.data?.id || null;
       toast("已提交到后端 (n8n)");
-      const task = addTask({ prompt, duration, model, remoteId });
-      if (remoteId) pollRemote(task);
+      if (remoteId) {
+        const task = addTask({ prompt, duration, model, remoteId });
+        pollRemote(task);
+      } else {
+        toast("后端未返回任务ID，无法跟踪进度");
+      }
     } else {
       const t = await res.json().catch(() => ({}));
       console.warn("backend rejected", t);
       toast("后端未受理，仍进行前端演示");
-      addTask({ prompt, duration, model });
     }
   } catch (e) {
     console.warn("request failed", e);
     toast("请求失败，进行前端演示");
-    addTask({ prompt, duration, model });
   }
 });
 
@@ -135,8 +137,7 @@ el("#btn-presets").addEventListener("click", () => {
   alert("示例预设:\n- " + presets.join("\n- "));
 });
 
-// Seed some tasks
-addTask({ prompt: "街头灯光反射，推镜进入人物眼神", duration: 15, model: "sora-2" });
+// 取消示例种子任务：空数据即为空
 
 // Expose for inline handlers
 window.recreate = recreate;
@@ -246,7 +247,7 @@ function mapRecentItem(r) {
 
 function renderRecent(items, container) {
   container.innerHTML = "";
-  if (!items.length) { container.innerHTML = `<div style="color:#6b7280">暂无记录</div>`; return; }
+  if (!items.length) { return; }
   for (const it of items) {
     const card = document.createElement("div");
     card.className = "card";

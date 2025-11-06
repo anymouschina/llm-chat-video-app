@@ -51,10 +51,7 @@ function mapItem(r) {
 }
 
 function render(items) {
-  if (!items.length) {
-    listEl.innerHTML = `<div style="color:#6b7280">暂无记录</div>`;
-    return;
-  }
+  if (!items.length) { listEl.innerHTML = ""; return; }
   listEl.innerHTML = "";
   for (const it of items) {
     const card = document.createElement("div");

@@ -152,7 +152,7 @@ function mapRecentItem(r) {
 
 function renderRecent(items, container) {
   container.innerHTML = "";
-  if (!items.length) { container.innerHTML = `<div style="color:#6b7280">暂无记录</div>`; return; }
+  if (!items.length) { return; }
   for (const it of items) {
     const card = document.createElement("div");
     card.className = "card";

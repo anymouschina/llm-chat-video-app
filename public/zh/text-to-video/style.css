@@ -35,9 +35,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,Canta
 .progress{height:6px;border-radius:999px;background:#eee;overflow:hidden;margin-top:8px}
 .progress>span{display:block;height:100%;background:linear-gradient(90deg,#f6821f,#e37312)}
 .task-actions{display:flex;gap:8px;margin-top:8px}
+.spinner{width:14px;height:14px;border:2px solid #cbd5e1;border-top-color:#2563eb;border-radius:50%;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.task-empty{color:var(--muted);font-size:14px;padding:8px;border:1px dashed var(--border);border-radius:8px;text-align:center}
 .recent{display:grid;gap:12px}
 .card{border:1px solid var(--border);border-radius:8px;padding:10px}
 .thumb{width:100%;height:160px;background:#111;border-radius:6px;margin-bottom:8px;display:grid;place-items:center;color:#9ca3af}
 .footer{border-top:1px solid var(--border);color:var(--muted);font-size:12px;padding:12px 16px;max-width:1200px;margin:0 auto}
 @media(max-width:1100px){.layout{grid-template-columns:1fr;}.results{order:3}.sidebar{order:1}.work{order:2}}
-
