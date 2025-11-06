@@ -146,7 +146,9 @@ function mapRecentItem(r) {
       vurl = ex?.downloadable_url || ex?.url || ex?.encodings?.source?.path || ex?.encodings?.source_wm?.path || null;
     }
     if (vurl) vurl = String(vurl).replaceAll("openai.com","beqlee.icu");
-    return { title: r.title || r.prompt || r.chat || "(无题)", createdAt: r.createdAt || r.created_at || "", model: r.model || "", videoUrl: vurl };
+    let remixId = null;
+    try { const ex2 = typeof r.extra === "string" ? JSON.parse(r.extra) : r.extra; remixId = ex2?.id || null; } catch {}
+    return { title: r.title || r.prompt || r.chat || "(无题)", createdAt: r.createdAt || r.created_at || "", model: r.model || "", videoUrl: vurl, remixId };
   } catch { return null; }
 }
 
@@ -156,7 +158,9 @@ function renderRecent(items, container) {
   for (const it of items) {
     const card = document.createElement("div");
     card.className = "card";
-    const media = it.videoUrl ? `<video class=\"thumb\" src=\"${it.videoUrl}\" controls preload=\"metadata\"></video>` : `<div class=\"thumb\">无视频</div>`;
+    const link = it.videoUrl ? `/zh/text-to-video/?video=${encodeURIComponent(it.videoUrl)}&title=${encodeURIComponent(it.title)}${it.remixId ? `&remixId=${encodeURIComponent(it.remixId)}` : ''}` : null;
+    const mediaInner = it.videoUrl ? `<video class=\"thumb\" src=\"${it.videoUrl}\" preload=\"metadata\"></video>` : `<div class=\"thumb\">无视频</div>`;
+    const media = link ? `<a href=\"${link}\">${mediaInner}</a>` : mediaInner;
     card.innerHTML = `
       ${media}
       <div style=\"display:flex;gap:8px;align-items:center\">

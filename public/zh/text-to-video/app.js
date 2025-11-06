@@ -5,6 +5,7 @@ const state = {
   tasks: [], // { id, status, progress, prompt, model, duration, remoteId, videoUrl }
   nextId: 124,
 };
+let CURRENT_REMIX_ID = null;
 
 function addTask({ prompt, duration, model, remoteId }) {
   const id = state.nextId++;
@@ -87,7 +88,7 @@ el("#generate").addEventListener("click", async () => {
     size: "small",
     n_frames,
     inpaint_items: [],
-    remix_target_id: remixIdParam || null,
+    remix_target_id: (CURRENT_REMIX_ID || remixIdParam) || null,
     metadata: null,
     cameo_ids: null,
     cameo_replacements: null,
@@ -320,6 +321,14 @@ function setSelectedVideo(videoUrl, title, remixId){
   const url = String(videoUrl);
   const remixEl = document.getElementById('remix-indicator');
   if (remixEl) remixEl.style.display = remixId ? 'inline-flex' : 'none';
+  CURRENT_REMIX_ID = remixId || null;
+  try {
+    const u = new URL(location.href);
+    if (CURRENT_REMIX_ID) u.searchParams.set('remixId', CURRENT_REMIX_ID); else u.searchParams.delete('remixId');
+    u.searchParams.set('video', url);
+    if (title) u.searchParams.set('title', title);
+    history.replaceState(null, '', u.toString());
+  } catch {}
   box.innerHTML = `
     <div style="display:flex;gap:8px;align-items:center">
       <strong class="title" style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(title||'已选择视频')}</strong>
