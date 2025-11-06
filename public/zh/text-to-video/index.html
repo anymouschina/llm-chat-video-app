@@ -37,7 +37,7 @@
             <div id="selected-video" class="selected-video"></div>
           </div>
           <div class="form-group">
-            <label class="label">提示词输入框</label>
+            <label class="label">提示词输入框（选择已有视频则会使用remix模式）</label>
             <textarea id="prompt" class="input" rows="8" placeholder="在这里输入场景描述、风格、人物、镜头语言……"></textarea>
           </div>
           <div class="toolbar">
@@ -83,6 +83,7 @@
           </div>
           <div class="center">
             <button id="generate" class="btn primary">生成视频</button>
+            <span id="remix-indicator" class="remix-badge" style="display:none;">Remix 模式</span>
           </div>
         </div>
       </section>

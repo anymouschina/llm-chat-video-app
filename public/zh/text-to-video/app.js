@@ -75,6 +75,10 @@ el("#generate").addEventListener("click", async () => {
   // 固定请求体：仅替换 prompt，其余字段按协议固定
   const orientation = "portrait";
   const n_frames = 300;
+  // use remix mode when selected video exists
+  const remixIndicator = document.getElementById('remix-indicator');
+  const urlObj = new URL(location.href);
+  const remixIdParam = urlObj.searchParams.get('remixId');
   const payload = {
     kind: "video",
     prompt,
@@ -83,7 +87,7 @@ el("#generate").addEventListener("click", async () => {
     size: "small",
     n_frames,
     inpaint_items: [],
-    remix_target_id: null,
+    remix_target_id: remixIdParam || null,
     metadata: null,
     cameo_ids: null,
     cameo_replacements: null,
@@ -251,9 +255,9 @@ function renderRecent(items, container) {
   for (const it of items) {
     const card = document.createElement("div");
     card.className = "card";
-    const link = it.videoUrl ? `/zh/text-to-video/?video=${encodeURIComponent(it.videoUrl)}&title=${encodeURIComponent(it.title)}` : null;
+    const link = it.videoUrl ? `/zh/text-to-video/?video=${encodeURIComponent(it.videoUrl)}&title=${encodeURIComponent(it.title)}${it.remixId ? `&remixId=${encodeURIComponent(it.remixId)}` : ''}` : null;
     const mediaInner = it.videoUrl ? `<video class=\"thumb\" src=\"${it.videoUrl}\" preload=\"metadata\"></video>` : `<div class=\"thumb\">无视频</div>`;
-    const media = link ? `<a href=\"${link}\">${mediaInner}</a>` : mediaInner;
+    const media = link ? `<a href=\"${link}\" data-video=\"${it.videoUrl}\" data-title=\"${it.title}\" ${it.remixId ? `data-remix-id=\"${it.remixId}\"` : ''}>${mediaInner}</a>` : mediaInner;
     card.innerHTML = `
       ${media}
       <div style=\"display:flex;gap:8px;align-items:center\">
@@ -316,3 +320,20 @@ function setSelectedVideo(videoUrl, title){
     <video src="${url}" controls preload="metadata"></video>
   `;
 }
+
+// Intercept clicks on recent list when already on T2V page
+(function(){
+  try {
+    const list = document.getElementById('recent-list');
+    if (!list) return;
+    list.addEventListener('click', (e) => {
+      const a = e.target && e.target.closest('a[data-video]');
+      if (!a) return;
+      // if already on /zh/text-to-video/, prevent navigation
+      if (location.pathname.startsWith('/zh/text-to-video')) {
+        e.preventDefault();
+        setSelectedVideo(a.getAttribute('data-video'), a.getAttribute('data-title'), a.getAttribute('data-remix-id'));
+      }
+    });
+  } catch {}
+})();

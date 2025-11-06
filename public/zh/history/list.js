@@ -56,7 +56,7 @@ function render(items) {
   for (const it of items) {
     const card = document.createElement("div");
     card.className = "card";
-    const link = it.vurl ? `/zh/text-to-video/?video=${encodeURIComponent(it.vurl)}&title=${encodeURIComponent(it.title)}` : null;
+    const link = it.vurl ? `/zh/text-to-video/?video=${encodeURIComponent(it.vurl)}&title=${encodeURIComponent(it.title)}${it.raw?.extra ? (()=>{try{const ex=typeof it.raw.extra==='string'?JSON.parse(it.raw.extra):it.raw.extra;return ex?.id?`&remixId=${encodeURIComponent(ex.id)}`:''}catch(e){return ''}})() : ''}` : null;
     const mediaInner = it.vurl ? `<video class=\"thumb\" src=\"${it.vurl}\" preload=\"metadata\"></video>` : `<div class=\"thumb\">无视频</div>`;
     const media = link ? `<a href=\"${link}\">${mediaInner}</a>` : mediaInner;
     card.innerHTML = `
