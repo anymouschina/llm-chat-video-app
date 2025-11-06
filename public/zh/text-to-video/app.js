@@ -245,7 +245,12 @@ function mapRecentItem(r) {
       const ex = typeof r.extra === "string" ? JSON.parse(r.extra) : r.extra;
       vurl = ex?.downloadable_url || ex?.url || ex?.encodings?.source?.path || ex?.encodings?.source_wm?.path || null;
     }
-    return { title: r.title || r.prompt || r.chat || "(无题)", createdAt: r.createdAt || r.created_at || "", model: r.model || "", videoUrl: vurl ? String(vurl).replaceAll("openai.com","beqlee.icu") : vurl };
+    let remixId = null;
+    try {
+      const ex2 = typeof r.extra === "string" ? JSON.parse(r.extra) : r.extra;
+      remixId = ex2?.id || null;
+    } catch {}
+    return { title: r.title || r.prompt || r.chat || "(无题)", createdAt: r.createdAt || r.created_at || "", model: r.model || "", videoUrl: vurl ? String(vurl).replaceAll("openai.com","beqlee.icu") : vurl, remixId };
   } catch { return null; }
 }
 
@@ -304,17 +309,20 @@ setInterval(loadRecent, 10000);
     const u = new URL(location.href);
     const v = u.searchParams.get('video');
     const t = u.searchParams.get('title');
-    if (v) setSelectedVideo(v, t||'');
+    const rid = u.searchParams.get('remixId');
+    if (v) setSelectedVideo(v, t||'', rid||null);
   } catch {}
 })();
 
-function setSelectedVideo(videoUrl, title){
+function setSelectedVideo(videoUrl, title, remixId){
   const box = document.getElementById('selected-video');
   if (!box) return;
   const url = String(videoUrl);
+  const remixEl = document.getElementById('remix-indicator');
+  if (remixEl) remixEl.style.display = remixId ? 'inline-flex' : 'none';
   box.innerHTML = `
     <div style="display:flex;gap:8px;align-items:center">
-      <strong style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(title||'已选择视频')}</strong>
+      <strong class="title" style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(title||'已选择视频')}</strong>
       <a class="btn" href="${url}" download>下载</a>
     </div>
     <video src="${url}" controls preload="metadata"></video>

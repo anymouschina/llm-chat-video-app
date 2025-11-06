@@ -160,7 +160,7 @@ function renderRecent(items, container) {
     card.innerHTML = `
       ${media}
       <div style=\"display:flex;gap:8px;align-items:center\">
-        <strong>${escapeHtml(it.title || '')}</strong>
+        <strong class="title">${escapeHtml(it.title || '')}</strong>
         <span style=\"color:#6b7280;margin-left:auto\">${escapeHtml(it.model || '')}</span>
       </div>
       <div style=\"color:#6b7280;margin-top:4px;\">${escapeHtml(it.createdAt || '')}</div>
