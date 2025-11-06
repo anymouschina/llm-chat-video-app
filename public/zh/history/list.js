@@ -56,11 +56,12 @@ function render(items) {
   for (const it of items) {
     const card = document.createElement("div");
     card.className = "card";
-    const media = it.vurl ? `<video class="thumb" src="${it.vurl}" controls preload="metadata"></video>` : `<div class="thumb">无视频</div>`;
+    const link = it.vurl ? `/zh/text-to-video/?video=${encodeURIComponent(it.vurl)}&title=${encodeURIComponent(it.title)}` : null;
+    const mediaInner = it.vurl ? `<video class=\"thumb\" src=\"${it.vurl}\" preload=\"metadata\"></video>` : `<div class=\"thumb\">无视频</div>`;
+    const media = link ? `<a href=\"${link}\">${mediaInner}</a>` : mediaInner;
     card.innerHTML = `
       ${media}
-      <div style="display:flex;gap:8px;align-items:center">
-        <strong>${escapeHtml(it.title)}</strong>
+      <div style=\"display:flex;gap:8px;align-items:center\">\n        <strong class=\"title\">${escapeHtml(it.title)}</strong>
         ${renderStatus(it)}
       </div>
       <div style="color:#6b7280;margin-top:4px;">${escapeHtml(it.createdAt || "")}</div>

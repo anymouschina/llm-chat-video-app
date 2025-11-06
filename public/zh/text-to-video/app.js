@@ -251,11 +251,13 @@ function renderRecent(items, container) {
   for (const it of items) {
     const card = document.createElement("div");
     card.className = "card";
-    const media = it.videoUrl ? `<video class=\"thumb\" src=\"${it.videoUrl}\" controls preload=\"metadata\"></video>` : `<div class=\"thumb\">无视频</div>`;
+    const link = it.videoUrl ? `/zh/text-to-video/?video=${encodeURIComponent(it.videoUrl)}&title=${encodeURIComponent(it.title)}` : null;
+    const mediaInner = it.videoUrl ? `<video class=\"thumb\" src=\"${it.videoUrl}\" preload=\"metadata\"></video>` : `<div class=\"thumb\">无视频</div>`;
+    const media = link ? `<a href=\"${link}\">${mediaInner}</a>` : mediaInner;
     card.innerHTML = `
       ${media}
       <div style=\"display:flex;gap:8px;align-items:center\">
-        <strong>${escapeHtml(it.title)}</strong>
+        <strong class="title">${escapeHtml(it.title)}</strong>
         <span style=\"color:#6b7280;margin-left:auto\">${escapeHtml(it.model || "")}</span>
       </div>
       <div style=\"color:#6b7280;margin-top:4px;\">${escapeHtml(it.createdAt || "")}</div>
@@ -292,3 +294,25 @@ function renderRecentMore(panelEl) {
 // Initial recent load + periodic refresh
 loadRecent();
 setInterval(loadRecent, 10000);
+// parse selected video from URL on load
+(function(){
+  try {
+    const u = new URL(location.href);
+    const v = u.searchParams.get('video');
+    const t = u.searchParams.get('title');
+    if (v) setSelectedVideo(v, t||'');
+  } catch {}
+})();
+
+function setSelectedVideo(videoUrl, title){
+  const box = document.getElementById('selected-video');
+  if (!box) return;
+  const url = String(videoUrl);
+  box.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center">
+      <strong style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(title||'已选择视频')}</strong>
+      <a class="btn" href="${url}" download>下载</a>
+    </div>
+    <video src="${url}" controls preload="metadata"></video>
+  `;
+}
