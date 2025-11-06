@@ -113,3 +113,89 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
+// --- 最近生成（远端拉取，默认展示5条，支持“展示更多”） ---
+let I2V_RECENT_ALL = [];
+let I2V_RECENT_VISIBLE = 5;
+
+async function loadRecent() {
+  const cont = document.getElementById("recent-list");
+  if (!cont) return;
+  try {
+    const res = await fetch("https://n8n-preview.beqlee.icu/webhook/videoList", { headers: { Accept: "application/json" } });
+    const json = await res.json();
+    I2V_RECENT_ALL = normalizeRecent(json);
+    renderRecent(I2V_RECENT_ALL.slice(0, I2V_RECENT_VISIBLE), cont);
+    renderRecentMore(cont.parentElement);
+  } catch (e) {
+    cont.innerHTML = `<div style="color:#6b7280">无法加载最近生成</div>`;
+  }
+}
+
+function normalizeRecent(json) {
+  const arr = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+  const items = arr.map(mapRecentItem).filter(Boolean);
+  items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  return items;
+}
+
+function mapRecentItem(r) {
+  try {
+    let vurl = r.videoUrl || r.video_url || r.url || r.downloadable_url || null;
+    if (!vurl && r.extra) {
+      const ex = typeof r.extra === "string" ? JSON.parse(r.extra) : r.extra;
+      vurl = ex?.downloadable_url || ex?.url || ex?.encodings?.source?.path || ex?.encodings?.source_wm?.path || null;
+    }
+    if (vurl) vurl = String(vurl).replaceAll("openai.com","beqlee.icu");
+    return { title: r.title || r.prompt || r.chat || "(无题)", createdAt: r.createdAt || r.created_at || "", model: r.model || "", videoUrl: vurl };
+  } catch { return null; }
+}
+
+function renderRecent(items, container) {
+  container.innerHTML = "";
+  if (!items.length) { container.innerHTML = `<div style="color:#6b7280">暂无记录</div>`; return; }
+  for (const it of items) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const media = it.videoUrl ? `<video class=\"thumb\" src=\"${it.videoUrl}\" controls preload=\"metadata\"></video>` : `<div class=\"thumb\">无视频</div>`;
+    card.innerHTML = `
+      ${media}
+      <div style=\"display:flex;gap:8px;align-items:center\">
+        <strong>${escapeHtml(it.title || '')}</strong>
+        <span style=\"color:#6b7280;margin-left:auto\">${escapeHtml(it.model || '')}</span>
+      </div>
+      <div style=\"color:#6b7280;margin-top:4px;\">${escapeHtml(it.createdAt || '')}</div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+function renderRecentMore(panelEl) {
+  if (!panelEl) return;
+  let moreEl = panelEl.querySelector('#recent-more');
+  if (!moreEl) {
+    moreEl = document.createElement('div');
+    moreEl.id = 'recent-more';
+    moreEl.style.display = 'flex';
+    moreEl.style.justifyContent = 'center';
+    moreEl.style.marginTop = '8px';
+    panelEl.appendChild(moreEl);
+  }
+  const remaining = Math.max(0, I2V_RECENT_ALL.length - I2V_RECENT_VISIBLE);
+  if (remaining > 0) {
+    moreEl.innerHTML = `<button class=\"btn\" id=\"recent-more-btn\">展示更多（剩余${remaining}）</button>`;
+    moreEl.querySelector('#recent-more-btn').onclick = () => {
+      I2V_RECENT_VISIBLE += 5;
+      const cont = document.getElementById('recent-list');
+      renderRecent(I2V_RECENT_ALL.slice(0, I2V_RECENT_VISIBLE), cont);
+      renderRecentMore(panelEl);
+    };
+  } else {
+    moreEl.innerHTML = '';
+  }
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+
+// 初次加载与轮询刷新
+loadRecent();
+setInterval(loadRecent, 10000);

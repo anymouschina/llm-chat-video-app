@@ -33,6 +33,7 @@ function mapItem(r) {
       const ex = typeof r.extra === "string" ? JSON.parse(r.extra) : r.extra;
       vurl = ex?.downloadable_url || ex?.url || ex?.encodings?.source?.path || ex?.encodings?.source_wm?.path || null;
     }
+    if (vurl) vurl = String(vurl).replaceAll("openai.com","beqlee.icu");
     const createdAt = r.createdAt || r.created_at || r.time || r.timestamp || "";
     const updatedAt = r.updatedAt || r.updated_at || "";
     const duration = r.duration || r.n_frames || r.length || "";

@@ -177,6 +177,7 @@ async function pollRemote(task) {
           vurl = ex?.downloadable_url || ex?.url || ex?.encodings?.source?.path || ex?.encodings?.source_wm?.path || null;
         } catch {}
       }
+      if (vurl) vurl = String(vurl).replaceAll("openai.com", "beqlee.icu");
 
       if (["finished","success","done","completed"].includes(status) || vurl) {
         task.status = "finished";
@@ -209,13 +210,17 @@ function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // --- Recent list from remote API ---
+let RECENT_ALL = [];
+let RECENT_VISIBLE = 5;
+
 async function loadRecent() {
   const recent = document.getElementById("recent-list");
   try {
     const res = await fetch("https://n8n-preview.beqlee.icu/webhook/videoList", { headers: { Accept: "application/json" } });
     const json = await res.json();
-    const items = normalizeRecent(json).slice(0, 6);
-    renderRecent(items, recent);
+    RECENT_ALL = normalizeRecent(json);
+    renderRecent(RECENT_ALL.slice(0, RECENT_VISIBLE), recent);
+    renderRecentMore(recent.parentElement);
   } catch (e) {
     recent.innerHTML = `<div style="color:#6b7280">无法加载最近生成</div>`;
   }
@@ -235,7 +240,7 @@ function mapRecentItem(r) {
       const ex = typeof r.extra === "string" ? JSON.parse(r.extra) : r.extra;
       vurl = ex?.downloadable_url || ex?.url || ex?.encodings?.source?.path || ex?.encodings?.source_wm?.path || null;
     }
-    return { title: r.title || r.prompt || r.chat || "(无题)", createdAt: r.createdAt || r.created_at || "", model: r.model || "", videoUrl: vurl };
+    return { title: r.title || r.prompt || r.chat || "(无题)", createdAt: r.createdAt || r.created_at || "", model: r.model || "", videoUrl: vurl ? String(vurl).replaceAll("openai.com","beqlee.icu") : vurl };
   } catch { return null; }
 }
 
@@ -255,6 +260,31 @@ function renderRecent(items, container) {
       <div style=\"color:#6b7280;margin-top:4px;\">${escapeHtml(it.createdAt || "")}</div>
     `;
     container.appendChild(card);
+  }
+}
+
+function renderRecentMore(panelEl) {
+  if (!panelEl) return;
+  let moreEl = panelEl.querySelector('#recent-more');
+  if (!moreEl) {
+    moreEl = document.createElement('div');
+    moreEl.id = 'recent-more';
+    moreEl.style.display = 'flex';
+    moreEl.style.justifyContent = 'center';
+    moreEl.style.marginTop = '8px';
+    panelEl.appendChild(moreEl);
+  }
+  const remaining = Math.max(0, RECENT_ALL.length - RECENT_VISIBLE);
+  if (remaining > 0) {
+    moreEl.innerHTML = `<button class="btn" id="recent-more-btn">展示更多（剩余${remaining}）</button>`;
+    moreEl.querySelector('#recent-more-btn').onclick = () => {
+      RECENT_VISIBLE += 5;
+      const recent = document.getElementById('recent-list');
+      renderRecent(RECENT_ALL.slice(0, RECENT_VISIBLE), recent);
+      renderRecentMore(panelEl);
+    };
+  } else {
+    moreEl.innerHTML = '';
   }
 }
 
