@@ -80,6 +80,8 @@ el("#generate").addEventListener("click", async () => {
   const remixIndicator = document.getElementById('remix-indicator');
   const urlObj = new URL(location.href);
   const remixIdParam = urlObj.searchParams.get('remixId');
+  const hasRemix = !!(CURRENT_REMIX_ID || remixIdParam);
+  const uploadArr = (window.__UPLOAD_ITEMS__ && Array.isArray(window.__UPLOAD_ITEMS__)) ? window.__UPLOAD_ITEMS__ : [];
   const payload = {
     kind: "video",
     prompt,
@@ -87,8 +89,8 @@ el("#generate").addEventListener("click", async () => {
     orientation,
     size: "small",
     n_frames,
-    inpaint_items: (window.__UPLOAD_ITEMS__ && window.__UPLOAD_ITEMS__.length ? window.__UPLOAD_ITEMS__.map(it => ({ kind: 'upload', upload_id: it.id })) : []),
-    remix_target_id: (CURRENT_REMIX_ID || remixIdParam) || null,
+    inpaint_items: hasRemix ? [] : (uploadArr.length ? uploadArr.slice(0,1).map(it => ({ kind: 'upload', upload_id: it.id })) : []),
+    remix_target_id: hasRemix ? ((CURRENT_REMIX_ID || remixIdParam) || null) : null,
     metadata: null,
     cameo_ids: null,
     cameo_replacements: null,
@@ -329,6 +331,7 @@ function setSelectedVideo(videoUrl, title, remixId){
     if (title) u.searchParams.set('title', title);
     history.replaceState(null, '', u.toString());
   } catch {}
+  clearUploads();
   box.innerHTML = `
     <div style="display:flex;gap:8px;align-items:center">
       <strong class="title" style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(title||'已选择视频')}</strong>
@@ -357,6 +360,7 @@ function setSelectedVideo(videoUrl, title, remixId){
 
 // --- Paste/Click upload for images ---
 const UPLOAD_ENDPOINT = 'https://n8n-preview.beqlee.icu/webhook/upload';
+window.__UPLOAD_ITEMS__ = window.__UPLOAD_ITEMS__ || [];
 const filePicker = document.getElementById('file-picker');
 const pickBtn = document.getElementById('pick-image');
 const uploadPreview = document.getElementById('upload-preview');
@@ -443,9 +447,18 @@ function addUploadedPreview(url, name, id){
   const del = document.createElement('button'); del.className='btn'; del.type='button'; del.textContent='移除';
   del.onclick = () => {
     wrap.remove();
+    try {
+      if (window.__UPLOAD_ITEMS__ && id) {
+        const idx = window.__UPLOAD_ITEMS__.findIndex(it => it.id === id);
+        if (idx >= 0) window.__UPLOAD_ITEMS__.splice(idx, 1);
+      }
+    } catch {}
     finishUploading(null);
   };
   row.appendChild(a); row.appendChild(del);
   wrap.appendChild(img); wrap.appendChild(row);
   uploadPreview.appendChild(wrap);
 }
+
+function clearUploads(){ try { window.__UPLOAD_ITEMS__ = []; const p=document.getElementById('upload-preview'); if (p) p.innerHTML=''; finishUploading(null);} catch {} }
+function clearSelectedVideo(){ try { CURRENT_REMIX_ID=null; const remixEl=document.getElementById('remix-indicator'); if (remixEl) remixEl.style.display='none'; const box=document.getElementById('selected-video'); if (box) box.innerHTML=''; const u=new URL(location.href); u.searchParams.delete('remixId'); u.searchParams.delete('video'); u.searchParams.delete('title'); history.replaceState(null,'',u.toString()); } catch {} }
