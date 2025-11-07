@@ -11,7 +11,6 @@
       <div class="topbar-inner">
         <a class="brand" href="/">AI Video</a>
         <nav class="topnav">
-          <a href="/">首页</a>
           <a href="/zh/text-to-video/">图文生视频</a>
           <a class="active" href="/zh/history/">历史记录</a>
         </nav>
@@ -21,7 +20,6 @@
     <main class="layout">
       <aside class="sidebar">
         <div class="menu">
-          <a class="menu-item" href="/">首页</a>
           <a class="menu-item" href="/zh/text-to-video/">图文生视频</a>
           <a class="menu-item active" href="/zh/history/">历史记录</a>
         </div>
@@ -57,6 +55,20 @@
           <div style="margin-bottom:8px;color:#6b7280" id="role-modal-meta"></div>
           <video id="role-video" controls preload="metadata" playsinline style="width:100%;max-height:50vh;background:#111;border-radius:8px;"></video>
           <div style="margin-top:10px">
+            <div class="grid4" style="margin-bottom:10px;">
+              <div>
+                <label class="label">角色名</label>
+                <input id="role-name" class="input" placeholder="例如：街头猫侠" />
+              </div>
+              <div>
+                <label class="label">类型</label>
+                <input id="role-type" class="input" placeholder="例如：拟人/动物/科幻" />
+              </div>
+              <div style="grid-column: span 2;">
+                <label class="label">描述</label>
+                <input id="role-desc" class="input" placeholder="一句话描述该角色…" />
+              </div>
+            </div>
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
               <span class="label">当前</span><span id="role-cur" class="label">0.00s</span>
               <span class="label">/ 时长</span><span id="role-dur" class="label">--</span>
@@ -66,7 +78,10 @@
               <button class="btn" id="role-set-start">设为起点</button>
               <button class="btn" id="role-set-end">设为终点</button>
             </div>
-            <div id="timeline" style="position:relative;height:36px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;">
+            <div id="timeline" style="position:relative;height:56px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">
+              <div id="frames" style="position:absolute;inset:0;display:flex;gap:0;align-items:stretch;">
+                <!-- tiled frame thumbnails will be injected here -->
+              </div>
               <div id="sel" style="position:absolute;top:0;height:100%;background:rgba(246,130,31,0.25);border:1px solid #f6821f;border-radius:4px;cursor:move;">
                 <div id="handle-l" style="position:absolute;left:-6px;top:0;width:12px;height:100%;cursor:ew-resize;background:rgba(0,0,0,0.1);"></div>
                 <div id="handle-r" style="position:absolute;right:-6px;top:0;width:12px;height:100%;cursor:ew-resize;background:rgba(0,0,0,0.1);"></div>

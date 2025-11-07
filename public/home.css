@@ -48,3 +48,8 @@ video.thumb{width:100%;height:auto;max-height:50vh;display:block;background:#111
   overflow: hidden;
   white-space: nowrap;
 }
+/* Timeline frames should not capture pointer events */
+#timeline #frames, #timeline #frames * {
+  pointer-events: none !important;
+  user-select: none;
+}

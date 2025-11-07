@@ -93,6 +93,9 @@ const modal = document.getElementById('role-modal');
 const modalClose = document.getElementById('role-modal-close');
 const modalX = document.getElementById('role-modal-x');
 const modalMeta = document.getElementById('role-modal-meta');
+const inRoleName = document.getElementById('role-name');
+const inRoleType = document.getElementById('role-type');
+const inRoleDesc = document.getElementById('role-desc');
 const v = document.getElementById('role-video');
 const cur = document.getElementById('role-cur');
 const dur = document.getElementById('role-dur');
@@ -106,14 +109,19 @@ const submitBtn = document.getElementById('role-submit');
 
 let VIDEO_URL = null;
 let DURATION = 0;
+let TILES = 0; // number of frame tiles
+let STEP_SEC = 0; // seconds per tile
+let RANGE = { start: 0, end: 0 }; // allowed playback window
 const MAX_LEN = 3; // seconds
+let LAST_ITEM = null;
 
 function openRoleModal(it){
+  LAST_ITEM = it;
   VIDEO_URL = it.vurl;
   const title = it.title || '';
   if (modal) modal.style.display = 'block';
   if (modalMeta) modalMeta.textContent = `视频：${title}`;
-  if (v) { v.src = VIDEO_URL; v.addEventListener('loadedmetadata', initRangeOnce, { once: true }); }
+  if (v) { v.crossOrigin = 'anonymous'; v.src = VIDEO_URL; v.addEventListener('loadedmetadata', initRangeOnce, { once: true }); }
 }
 function closeRoleModal(){ if (modal) modal.style.display = 'none'; resetRange(); }
 modalClose?.addEventListener('click', closeRoleModal); modalX?.addEventListener('click', closeRoleModal);
@@ -126,6 +134,11 @@ function initRangeOnce(){
   const w = Math.max(1, defLen * pxPerSec);
   sel.style.left = `0px`; sel.style.width = `${w}px`;
   inStart.value = '0.00'; inEnd.value = defLen.toFixed(2);
+  setRange(0, defLen);
+  // ensure video begins inside range
+  safeSeek(RANGE.start);
+  // render frames strip
+  renderFramesStrip();
 }
 function resetRange(){ if (inStart) inStart.value='0.00'; if (inEnd) inEnd.value='0.00'; if (sel){ sel.style.left='0px'; sel.style.width='1px'; } }
 v?.addEventListener('timeupdate', ()=>{ if (isFinite(v.currentTime)) cur.textContent = `${v.currentTime.toFixed(2)}s`; });
@@ -155,11 +168,26 @@ function onDragMove(e){ if (!dragState) return; const dx = e.clientX - dragState
   }
   updateRangeFromSel();
 }
-function endDrag(){ dragState=null; }
-function updateRangeFromSel(){ const tlw=tl.clientWidth; const pxPerSec = tlw / (DURATION||1); const left=sel.offsetLeft; const w=sel.offsetWidth; const s=left/pxPerSec; const e=s + w/pxPerSec; inStart.value = s.toFixed(2); inEnd.value = Math.min(DURATION, e).toFixed(2); }
+function endDrag(){
+  if (dragState){
+    // Snap selection to tile grid for clean alignment
+    const tlw = tl.clientWidth; const stepPx = TILES>0 ? (tlw / TILES) : 0;
+    if (stepPx > 0){
+      const left = Math.round(sel.offsetLeft / stepPx) * stepPx;
+      const right = Math.round((sel.offsetLeft + sel.offsetWidth) / stepPx) * stepPx;
+      const width = Math.max(stepPx, right - left);
+      sel.style.left = `${clamp(left,0,Math.max(0,tlw-width))}px`;
+      sel.style.width = `${clamp(width, stepPx, tlw)}px`;
+      updateRangeFromSel();
+      followRangeChange(true);
+    }
+  }
+  dragState=null;
+}
+// updateRangeFromSel is defined below with range sync
 
-document.getElementById('role-set-start')?.addEventListener('click', ()=>{ const tlw=tl.clientWidth; const pxPerSec = tlw / (DURATION||1); const startSec = isFinite(v.currentTime)?v.currentTime:0; const width = sel.offsetWidth; let newLeft = clamp(startSec*pxPerSec, 0, Math.max(0, tlw - width)); sel.style.left = `${newLeft}px`; updateRangeFromSel(); });
-document.getElementById('role-set-end')?.addEventListener('click', ()=>{ const tlw=tl.clientWidth; const pxPerSec = tlw / (DURATION||1); const endSec = isFinite(v.currentTime)?v.currentTime:0; const maxWidth = MAX_LEN*pxPerSec; let newWidth = Math.min(maxWidth, tlw); let newLeft = clamp(endSec*pxPerSec - newWidth, 0, tlw - newWidth); sel.style.left = `${newLeft}px`; sel.style.width = `${newWidth}px`; updateRangeFromSel(); });
+document.getElementById('role-set-start')?.addEventListener('click', ()=>{ const tlw=tl.clientWidth; const pxPerSec = tlw / (DURATION||1); const startSec = isFinite(v.currentTime)?v.currentTime:0; const width = sel.offsetWidth; let newLeft = clamp(startSec*pxPerSec, 0, Math.max(0, tlw - width)); sel.style.left = `${newLeft}px`; updateRangeFromSel(); followRangeChange(true); });
+document.getElementById('role-set-end')?.addEventListener('click', ()=>{ const tlw=tl.clientWidth; const pxPerSec = tlw / (DURATION||1); const endSec = isFinite(v.currentTime)?v.currentTime:0; const maxWidth = MAX_LEN*pxPerSec; let newWidth = Math.min(maxWidth, tlw); let newLeft = clamp(endSec*pxPerSec - newWidth, 0, tlw - newWidth); sel.style.left = `${newLeft}px`; sel.style.width = `${newWidth}px`; updateRangeFromSel(); followRangeChange(true); });
 
 document.getElementById('role-submit')?.addEventListener('click', async ()=>{
   try{
@@ -168,7 +196,14 @@ document.getElementById('role-submit')?.addEventListener('click', async ()=>{
     const endSec = Math.max(0, Number(inEnd.value||0));
     if (!(endSec > startSec)) return toast('起点必须小于终点');
     if (endSec - startSec > MAX_LEN + 1e-6) return toast('最长不超过3秒');
-    const body = { videoUrl: VIDEO_URL, startSec, endSec };
+    const timestamps = `${fmtSec(startSec)},${fmtSec(endSec)}`;
+    const body = {
+      videoUrl: VIDEO_URL,
+      timestamps,
+      name: (inRoleName?.value || '').trim(),
+      role: (inRoleType?.value || '').trim(),
+      belone: (inRoleDesc?.value || '').trim(),
+    };
     const res = await fetch(ROLE_CREATE_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
     if (!res.ok){ console.warn('create role failed', await res.text()); return toast('提交失败'); }
     toast('已提交'); closeRoleModal();
@@ -176,6 +211,110 @@ document.getElementById('role-submit')?.addEventListener('click', async ()=>{
 });
 
 function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+function fmtSec(n){ const s = Math.max(0, Number(n)||0); let str = s.toFixed(2); return str.replace(/\.?0+$/,''); }
+
+// --- Constrain video playback to selection range ---
+function setRange(s, e){
+  s = Math.max(0, Number(s)||0); e = Math.max(s, Number(e)||s);
+  RANGE.start = s; RANGE.end = e;
+}
+function getRange(){ return { start: RANGE.start, end: RANGE.end }; }
+function updateRangeFromSel(){ const tlw=tl.clientWidth; const pxPerSec = tlw / (DURATION||1); const left=sel.offsetLeft; const w=sel.offsetWidth; const s=left/pxPerSec; const e=s + w/pxPerSec; inStart.value = s.toFixed(2); inEnd.value = Math.min(DURATION, e).toFixed(2); setRange(s, Math.min(DURATION, e)); }
+let seekingGuard = false;
+function safeSeek(t){ try{ seekingGuard = true; v.currentTime = t; } catch {} finally { setTimeout(()=>{ seekingGuard=false; }, 0); } }
+function clampVideoToRange(){ const {start,end} = getRange(); if (!isFinite(v.currentTime)) return; if (v.currentTime < start) safeSeek(start); if (v.currentTime > end) safeSeek(end); }
+v?.addEventListener('play', ()=>{ const {start} = getRange(); if (!isFinite(v.currentTime) || v.currentTime < start || v.currentTime > RANGE.end) safeSeek(start); });
+v?.addEventListener('timeupdate', ()=>{ const {start,end} = getRange(); if (isFinite(v.currentTime) && v.currentTime >= end - 0.02) { const wasPlaying = !v.paused; safeSeek(start); if (wasPlaying) { try { v.play(); } catch {} } } });
+v?.addEventListener('seeking', ()=>{ if (seekingGuard) return; clampVideoToRange(); });
+
+function followRangeChange(autoPlay){ safeSeek(RANGE.start); if (autoPlay) { try { v.play(); } catch {} } }
+
+async function renderFramesStrip(){
+  const frames = document.getElementById('frames');
+  if (!frames) return;
+  frames.innerHTML = '';
+  if (!DURATION || !isFinite(DURATION)) return;
+  // compute fixed-size tile widths to exactly cover the timeline
+  const tlw = tl.clientWidth;
+  const tiles = Math.min(12, Math.max(6, Math.floor(tlw / 80)));
+  const step = DURATION / tiles;
+  TILES = tiles; STEP_SEC = step;
+  const tileW = Math.floor(tlw / tiles);
+  const lastTileW = tlw - tileW * (tiles - 1);
+  const tlh = frames.clientHeight || 56;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  try {
+    await sampleFramesViaCanvas(tiles, step, frames, canvas, ctx, tileW, lastTileW, tlh);
+  } catch (e) {
+    // Fallback: try thumbnail from extra, tile repeated
+    const thumb = getThumbnailUrl(LAST_ITEM?.raw?.extra);
+    if (thumb) {
+      for (let i=0;i<tiles;i++) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = `height:100%;width:${i===tiles-1?lastTileW:tileW}px;overflow:hidden;`;
+        const img = document.createElement('img');
+        img.src = thumb; img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+        wrap.appendChild(img); frames.appendChild(wrap);
+      }
+    }
+  }
+}
+
+function getThumbnailUrl(extra){
+  try { const ex = typeof extra==='string' ? JSON.parse(extra) : extra; const t = ex?.thumbnail?.path || ex?.thumbnail_url || null; return t ? String(t).replaceAll('openai.com','beqlee.icu') : null; } catch { return null; }
+}
+
+async function sampleFramesViaCanvas(tiles, step, container, canvas, ctx, tileW, lastTileW, tlh){
+  // wait a short time to ensure dimensions
+  await new Promise(r=>setTimeout(r,50));
+  const vw = v.videoWidth || 9; const vh = v.videoHeight || 16; const vAspect = vw/vh;
+  for (let i=0;i<tiles;i++){
+    const t = Math.min(DURATION, Math.max(0, i*step + step/2));
+    await seekVideoTo(t);
+    try {
+      const tw = (i===tiles-1?lastTileW:tileW);
+      const th = tlh;
+      // set canvas to tile size
+      canvas.width = tw; canvas.height = th;
+      // draw cover: center-crop without distortion
+      const targetAspect = tw/th;
+      let sx=0, sy=0, sw=vw, sh=vh;
+      if (vAspect > targetAspect){
+        // video wider than target, crop width
+        sh = vh;
+        sw = Math.round(sh * targetAspect);
+        sx = Math.round((vw - sw)/2);
+        sy = 0;
+      } else {
+        // video taller than target, crop height
+        sw = vw;
+        sh = Math.round(sw / targetAspect);
+        sx = 0;
+        sy = Math.round((vh - sh)/2);
+      }
+      ctx.clearRect(0,0,tw,th);
+      ctx.drawImage(v, sx, sy, sw, sh, 0, 0, tw, th);
+      const data = canvas.toDataURL('image/jpeg', 0.6);
+      const wrap = document.createElement('div');
+      wrap.style.cssText = `height:100%;width:${tw}px;overflow:hidden;`;
+      const img = document.createElement('img');
+      img.src = data; img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;';
+      wrap.appendChild(img);
+      container.appendChild(wrap);
+    } catch (e) {
+      throw e; // fall back if CORS blocks
+    }
+  }
+}
+
+function seekVideoTo(t){
+  return new Promise((res)=>{
+    const handler = ()=>{ v.removeEventListener('seeked', handler); res(); };
+    v.addEventListener('seeked', handler);
+    try { v.currentTime = t; } catch { v.removeEventListener('seeked', handler); res(); }
+  });
+}
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));

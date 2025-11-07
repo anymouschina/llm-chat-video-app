@@ -1,6 +1,14 @@
 const el = (sel, p = document) => p.querySelector(sel);
 const els = (sel, p = document) => Array.from(p.querySelectorAll(sel));
 
+// Centralized endpoints
+const ENDPOINT = {
+  create: "https://n8n-preview.beqlee.icu/webhook/cfb4829e-3eea-4062-9904-b408e153fb14",
+  status: "https://n8n-preview.beqlee.icu/webhook/f44e67ae-059c-4150-a01a-c1988413ef38",
+  list: "https://n8n-preview.beqlee.icu/webhook/videoList",
+  upload: "https://n8n-preview.beqlee.icu/webhook/upload",
+};
+
 const state = {
   tasks: [], // { id, status, progress, prompt, model, duration, remoteId, videoUrl }
   nextId: 124,
@@ -41,19 +49,28 @@ function recreate(id) {
 function renderTasks() {
   const list = el("#task-list");
   list.innerHTML = "";
-  state.tasks.forEach((t) => {
+  const visible = state.tasks.filter(t => t.status !== "finished");
+  const running = visible.filter(t => t.status === "running");
+  if (!visible.length || !running.length) {
+    const empty = document.createElement("div");
+    empty.className = "task-empty";
+    empty.textContent = "暂无进行中的任务";
+    list.appendChild(empty);
+    return;
+  }
+  running.forEach((t) => {
     const item = document.createElement("div");
     item.className = "task";
-    const badgeClass = t.status === "running" ? "running" : t.status === "finished" ? "finished" : "failed";
+    const badgeClass = t.status === "running" ? "running" : t.status === "failed" ? "failed" : "";
     item.innerHTML = `
       <div class="task-head">
         <code style="background:#f3f4f6;padding:2px 6px;border-radius:6px">#${t.id}</code>
         <span class="badge ${badgeClass}">${t.status}</span>
+        <span class="spinner" style="margin-left:8px"></span>
         <span style="margin-left:auto;color:#6b7280">${Math.round(t.progress)}%</span>
       </div>
       <div class="progress"><span style="width:${t.progress}%"></span></div>
       <div class="task-actions">
-        ${t.status === "finished" ? `<button class="btn" onclick="alert('演示：播放视频')">播放</button>` : ``}
         ${t.status === "failed" ? `<button class="btn" onclick="recreate(${t.id})">重试</button>` : ``}
       </div>
     `;
@@ -103,7 +120,7 @@ el("#generate").addEventListener("click", async () => {
   };
   // Fire real request to Worker API -> n8n; continue with optimistic UI
   try {
-    const res = await fetch("https://n8n-preview.beqlee.icu/webhook/cfb4829e-3eea-4062-9904-b408e153fb14", {
+    const res = await fetch(ENDPOINT.create, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -160,7 +177,7 @@ function toast(msg) {
 }
 
 async function pollRemote(task) {
-  const statusUrl = "https://n8n-preview.beqlee.icu/webhook/f44e67ae-059c-4150-a01a-c1988413ef38";
+  const statusUrl = ENDPOINT.status;
   while (task.status === "running") {
     try {
       const url = `${statusUrl}?taskId=${encodeURIComponent(task.remoteId)}`;
@@ -224,7 +241,7 @@ let RECENT_VISIBLE = 5;
 async function loadRecent() {
   const recent = document.getElementById("recent-list");
   try {
-    const res = await fetch("https://n8n-preview.beqlee.icu/webhook/videoList", { headers: { Accept: "application/json" } });
+    const res = await fetch(ENDPOINT.list, { headers: { Accept: "application/json" } });
     const json = await res.json();
     RECENT_ALL = normalizeRecent(json);
     renderRecent(RECENT_ALL.slice(0, RECENT_VISIBLE), recent);
@@ -359,7 +376,7 @@ function setSelectedVideo(videoUrl, title, remixId){
 })();
 
 // --- Paste/Click upload for images ---
-const UPLOAD_ENDPOINT = 'https://n8n-preview.beqlee.icu/webhook/upload';
+const UPLOAD_ENDPOINT = ENDPOINT.upload;
 window.__UPLOAD_ITEMS__ = window.__UPLOAD_ITEMS__ || [];
 const filePicker = document.getElementById('file-picker');
 const pickBtn = document.getElementById('pick-image');
@@ -388,6 +405,14 @@ document.addEventListener('paste', (e) => {
 
 async function uploadImageFile(file) {
   try {
+    // sy_8 限制：仅支持 1 张图片；且与 remix 互斥
+    if (window.__UPLOAD_ITEMS__ && window.__UPLOAD_ITEMS__.length >= 1) {
+      toast('sy_8 模式仅支持一张图片');
+      return;
+    }
+    if (CURRENT_REMIX_ID) {
+      clearSelectedVideo();
+    }
     const fd = new FormData();
     const name = file.name || `paste-${Date.now()}.png`;
     fd.append('file', file, name);
