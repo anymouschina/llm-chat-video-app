@@ -1,10 +1,12 @@
 const listEl = document.getElementById("record-list");
 const inputTitle = document.getElementById("title");
 const ROLE_ENDPOINT = "https://n8n-preview.beqlee.icu/webhook/createRole"; // 可按需调整
+const ROLE_LIST_ENDPOINT = "https://n8n-preview.beqlee.icu/webhook/getRole";
 let HISTORY_ITEMS = [];
 let SELECTED_FOR_ROLE = null; // { title, vurl, remixId }
 document.getElementById("search").addEventListener("click", () => load(inputTitle.value.trim()));
 document.getElementById("refresh").addEventListener("click", () => load(inputTitle.value.trim()));
+document.getElementById("roles-refresh")?.addEventListener("click", () => loadRoles());
 
 async function load(title) {
   listEl.innerHTML = "加载中…";
@@ -18,6 +20,53 @@ async function load(title) {
     render(items);
   } catch (e) {
     listEl.innerHTML = `<div style="color:#dc2626">加载失败：${String(e)}`;
+  }
+}
+
+async function loadRoles() {
+  const panel = document.getElementById("role-list");
+  if (!panel) return;
+  panel.innerHTML = "加载中…";
+  try {
+    const res = await fetch(ROLE_LIST_ENDPOINT, { headers: { Accept: "application/json" } });
+    const json = await res.json();
+    const items = normalizeRoles(json);
+    renderRoles(items, panel);
+  } catch (e) {
+    panel.innerHTML = `<div style="color:#dc2626">加载失败</div>`;
+  }
+}
+
+function normalizeRoles(json){
+  const arr = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+  const items = arr.map((r)=>{
+    try{
+      return {
+        name: r.name || r.title || "(未命名)",
+        type: r.role || r.type || "",
+        belone: r.belone || r.desc || r.description || "",
+        createdAt: r.createdAt || r.created_at || r.time || "",
+      };
+    }catch{return null}
+  }).filter(Boolean);
+  items.sort((a,b)=> new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  return items;
+}
+
+function renderRoles(items, container){
+  container.innerHTML = "";
+  if (!items.length) return; // 空即空，不展示 mock
+  for (const it of items) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center">\n        <strong class="title">${escapeHtml(it.name)}</strong>
+        ${it.type?`<span style="color:#6b7280;margin-left:auto">${escapeHtml(it.type)}</span>`:''}
+      </div>
+      ${it.belone?`<div style="color:#6b7280;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(it.belone)}</div>`:''}
+      ${it.createdAt?`<div style="color:#9ca3af;margin-top:4px">${escapeHtml(it.createdAt)}</div>`:''}
+    `;
+    container.appendChild(card);
   }
 }
 
@@ -322,3 +371,15 @@ function escapeHtml(s) {
 
 // Initial load
 load("");
+loadRoles();
+
+// Lightweight toast helper (scoped to this page)
+function toast(msg){
+  try {
+    const d = document.createElement('div');
+    d.textContent = msg;
+    d.style.cssText = 'position:fixed;left:50%;top:10px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:8px;opacity:0.95;z-index:99999;font-size:13px';
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(), 1600);
+  } catch {}
+}

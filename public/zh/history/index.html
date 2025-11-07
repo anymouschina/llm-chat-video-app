@@ -42,18 +42,25 @@
         <div class="panel">
           <div id="record-list" class="recent"></div>
         </div>
+        <div class="panel">
+          <h1>角色列表</h1>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+            <button class="btn" id="roles-refresh">刷新</button>
+          </div>
+          <div id="role-list" class="recent"></div>
+        </div>
       </section>
 
       <!-- Modal: 角色参考截取 -->
-      <div id="role-modal" class="modal" style="display:none;position:fixed;inset:0;z-index:9998;">
+      <div id="role-modal" class="modal" style="display:none;position:fixed;inset:0;z-index:9998;overflow:auto;">
         <div class="modal-backdrop" id="role-modal-close" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);"></div>
-        <div class="modal-content" style="position:relative;z-index:9999;background:#fff;border:1px solid var(--border);border-radius:10px;max-width:900px;width:90vw;margin:8vh auto;padding:16px;">
+        <div class="modal-content" style="position:relative;z-index:9999;background:#fff;border:1px solid var(--border);border-radius:10px;max-width:900px;width:90vw;margin:8vh auto;padding:16px;max-height:86vh;overflow:auto;display:flex;flex-direction:column;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
             <strong style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">选择角色参考区间</strong>
             <button class="btn" id="role-modal-x">关闭</button>
           </div>
           <div style="margin-bottom:8px;color:#6b7280" id="role-modal-meta"></div>
-          <video id="role-video" controls preload="metadata" playsinline style="width:100%;max-height:50vh;background:#111;border-radius:8px;"></video>
+          <video id="role-video" controls preload="metadata" playsinline style="width:100%;max-height:40vh;background:#111;border-radius:8px;"></video>
           <div style="margin-top:10px">
             <div class="grid4" style="margin-bottom:10px;">
               <div>
