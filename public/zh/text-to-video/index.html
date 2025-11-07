@@ -40,6 +40,17 @@
             <label class="label">提示词输入框（选择已有视频则会使用remix模式）</label>
             <textarea id="prompt" class="input" rows="8" placeholder="在这里输入场景描述、风格、人物、镜头语言……"></textarea>
           </div>
+          <div class="upload-area" id="paste-upload">
+            <div class="upload-row">
+              <span class="label">图片上传（支持直接粘贴 Ctrl/⌘+V）</span>
+              <div class="spacer"></div>
+              <input id="file-picker" type="file" accept="image/*" hidden />
+              <button class="btn" id="pick-image" type="button">选择图片</button>
+            </div>
+            <div class="upload-preview" id="upload-preview">
+              <div class="placeholder" id="upload-placeholder">粘贴图片或点击“选择图片”上传</div>
+            </div>
+          </div>
           <div class="toolbar">
             <button class="btn" id="btn-extend">AI 提示词扩展</button>
             <button class="btn" id="btn-presets">我的预设</button>

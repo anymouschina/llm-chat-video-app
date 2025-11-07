@@ -87,7 +87,7 @@ el("#generate").addEventListener("click", async () => {
     orientation,
     size: "small",
     n_frames,
-    inpaint_items: [],
+    inpaint_items: (window.__UPLOAD_ITEMS__ && window.__UPLOAD_ITEMS__.length ? window.__UPLOAD_ITEMS__.map(it => ({ kind: 'upload', upload_id: it.id })) : []),
     remix_target_id: (CURRENT_REMIX_ID || remixIdParam) || null,
     metadata: null,
     cameo_ids: null,
@@ -354,3 +354,98 @@ function setSelectedVideo(videoUrl, title, remixId){
     });
   } catch {}
 })();
+
+// --- Paste/Click upload for images ---
+const UPLOAD_ENDPOINT = 'https://n8n-preview.beqlee.icu/webhook/upload';
+const filePicker = document.getElementById('file-picker');
+const pickBtn = document.getElementById('pick-image');
+const uploadPreview = document.getElementById('upload-preview');
+const uploadPlaceholder = document.getElementById('upload-placeholder');
+
+if (pickBtn && filePicker) {
+  pickBtn.addEventListener('click', () => filePicker.click());
+  filePicker.addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) uploadImageFile(f);
+  });
+}
+
+document.addEventListener('paste', (e) => {
+  if (!e.clipboardData || !e.clipboardData.items) return;
+  for (const item of e.clipboardData.items) {
+    if (item.type && item.type.startsWith('image/')) {
+      const blob = item.getAsFile();
+      if (blob) uploadImageFile(blob);
+      e.preventDefault();
+      break;
+    }
+  }
+});
+
+async function uploadImageFile(file) {
+  try {
+    const fd = new FormData();
+    const name = file.name || `paste-${Date.now()}.png`;
+    fd.append('file', file, name);
+    showUploading(name);
+    const res = await fetch(UPLOAD_ENDPOINT, { method: 'POST', body: fd });
+    const text = await res.text();
+    let url = null, id = null;
+    try {
+      const j = JSON.parse(text);
+      id = j.id || j.data?.id || j.result?.id || null;
+      url = j.url || j.data?.url || j.fileUrl || j.downloadUrl || j.result?.url || null;
+    } catch {
+      if (/^https?:\/\//.test(text.trim())) url = text.trim();
+    }
+    if (!id) {
+      toast('上传完成，但未返回ID');
+      finishUploading(null);
+      return;
+    }
+    url = String(url).replaceAll('openai.com','beqlee.icu');
+    addUploadedPreview(url, name, id);
+    window.__UPLOAD_ITEMS__ = window.__UPLOAD_ITEMS__ || [];
+    window.__UPLOAD_ITEMS__.push({ id, url, name });
+    finishUploading(url);
+  } catch (err) {
+    console.warn('upload failed', err);
+    toast('上传失败');
+    finishUploading(null);
+  }
+}
+
+function showUploading(name){
+  if (uploadPlaceholder) uploadPlaceholder.textContent = `正在上传 ${name} …`;
+}
+
+function finishUploading(url){
+  if (!uploadPlaceholder) return;
+  if (!url && !document.querySelector('#upload-preview img')) {
+    uploadPlaceholder.textContent = '粘贴图片或点击“选择图片”上传';
+  } else {
+    uploadPlaceholder.textContent = '';
+  }
+}
+
+function addUploadedPreview(url, name, id){
+  if (!uploadPreview) return;
+  const wrap = document.createElement('div');
+  wrap.style.display = 'flex';
+  wrap.style.flexDirection = 'column';
+  wrap.style.alignItems = 'center';
+  wrap.style.gap = '4px';
+  const img = document.createElement('img');
+  img.src = url; img.alt = name || 'uploaded';
+  const row = document.createElement('div');
+  row.style.display = 'flex'; row.style.gap = '6px';
+  const a = document.createElement('a'); a.href = url; a.textContent = '查看'; a.target = '_blank';
+  const del = document.createElement('button'); del.className='btn'; del.type='button'; del.textContent='移除';
+  del.onclick = () => {
+    wrap.remove();
+    finishUploading(null);
+  };
+  row.appendChild(a); row.appendChild(del);
+  wrap.appendChild(img); wrap.appendChild(row);
+  uploadPreview.appendChild(wrap);
+}

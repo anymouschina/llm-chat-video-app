@@ -18,6 +18,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,Canta
 .selected-video{margin-top:8px}
 .selected-video video{width:100%;height:auto;max-height:50vh;display:block;border-radius:8px;background:#111;margin-top:8px;object-fit:contain}
 .remix-badge{margin-left:8px;padding:4px 8px;border-radius:999px;border:1px solid var(--primary);color:var(--primary);font-size:12px;align-self:center}
+.upload-area{border:1px dashed var(--border);border-radius:8px;padding:10px;margin:8px 0;background:#fff}
+.upload-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.upload-preview{min-height:40px;display:flex;gap:8px;flex-wrap:wrap}
+.upload-preview img{max-height:80px;border-radius:6px;border:1px solid var(--border);background:#111}
+.placeholder{color:var(--muted);font-size:13px}
 .label{font-size:13px;color:var(--muted);margin-bottom:6px}
 .input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;font:inherit}
 .toolbar{display:flex;gap:8px;align-items:center;margin-top:10px}
